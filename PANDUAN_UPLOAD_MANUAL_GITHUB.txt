@@ -1,0 +1,42 @@
+ASPIQUEST 2.0 — PANDUAN UPLOAD MANUAL
+====================================
+
+PENTING
+Paket ini tidak mengubah GitHub atau database secara otomatis. Kamu bisa mengunggah file frontend sendiri lewat GitHub. Perubahan frontend ini juga memperbaiki error login ketika kolom avatar_url/recovery_email belum ada: profil sekarang dibaca dengan select('*') agar kolom tambahan yang belum tersedia tidak membuat login gagal.
+
+A. FILE YANG DIUPLOAD KE ROOT REPOSITORY GITHUB PAGES
+Upload/ganti file ini di root repository:
+- index.html
+- student.html
+- admin.html
+- app.js
+- service-worker.js
+- folder assets/ (upload seluruh isinya)
+
+Jangan ubah nama file atau memindahkan folder assets/. Jangan upload file private key, service-role key, API key email, password, atau data siswa.
+
+B. FILE BACKEND (BUKAN UNTUK DITAMPILKAN SEBAGAI HALAMAN WEBSITE)
+- ASPIQUEST_V2_MIGRATION.sql
+- ASPIQUEST_FIXES_MIGRATION.sql
+- SUPABASE_SETUP.sql / SUPABASE_SETUP_SAFE.sql
+- folder supabase/functions/
+File SQL dan Edge Functions tidak aktif hanya karena diunggah ke GitHub. SQL perlu diterapkan pada database dan Edge Functions perlu dideploy ke backend yang dipakai website. Jangan jalankan migration utama berulang kali tanpa memeriksa skema yang sudah ada.
+
+C. STATUS FITUR
+Frontend berisi branding Aspiquest, form aspirasi, tutorial, poin/riwayat, katalog hadiah, kontrol redeem, feedback, profil, dan halaman Control Room. Fitur yang menulis/membaca tabel tambahan, penghapusan akun, OTP email, upload avatar, dan push notification tetap bergantung pada skema database, RLS, Edge Functions, dan secret backend yang sesuai. Paket belum bisa disebut end-to-end aktif sebelum pengujian dengan akun tes.
+
+D. ERROR avatar_url
+Perubahan app.js di paket ini menghindari error login akibat kolom avatar_url yang belum ada. Foto profil tidak akan tersimpan ke database sampai kolom dan bucket avatar tersedia. File ASPIQUEST_FIXES_MIGRATION.sql menambahkan kolom avatar_url dan konfigurasi bucket/policy terkait, tetapi perlu ditinjau dan dijalankan pada backend secara terpisah.
+
+E. NOTIFIKASI PUSH
+Push notification membutuhkan service worker, VAPID public key yang cocok dengan private key, Edge Function, tabel push_subscriptions, serta izin notifikasi di perangkat PK Inti. Private key hanya disimpan sebagai secret backend dan tidak boleh diunggah ke GitHub.
+
+F. TEST SEBELUM LIVE
+1. Login dengan akun tes siswa dan akun tes PK Inti.
+2. Cek form aspirasi dan perhitungan poin.
+3. Cek katalog dan pastikan stok hadiah sudah benar sebelum membuka redeem.
+4. Tes redeem, penolakan/refund, feedback, dan status.
+5. Tes perubahan username/password dan penghapusan akun hanya dengan akun tes.
+6. Tes notifikasi di perangkat yang mengizinkan push.
+
+Jika ada error setelah upload, catat pesan error persisnya. Jangan langsung jalankan semua SQL di database live.

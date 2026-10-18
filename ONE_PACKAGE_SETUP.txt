@@ -1,0 +1,33 @@
+ASPIQUEST 2.0 — ONE-PACKAGE DEPLOYMENT
+=====================================
+
+This archive contains the website files, SQL migrations, Supabase Edge Functions, assets, and setup instructions together.
+It does NOT automatically publish to GitHub or change your Supabase project.
+
+GITHUB PAGES
+- Upload the website files at the repository root: index.html, student.html, admin.html, app.js, service-worker.js, assets/.
+- Do not upload private keys or service-role credentials.
+- Do not upload the Supabase SQL files as public website assets if you prefer to keep the repository minimal; they are deployment scripts, not frontend files.
+
+SUPABASE
+- Review and apply ASPIQUEST_V2_MIGRATION.sql only if not already applied.
+- Then review and apply ASPIQUEST_FIXES_MIGRATION.sql.
+- Deploy the functions under supabase/functions/:
+  admin-delete-student
+  push-redeem-notification
+  profile-security
+- Configure required server secrets in Supabase Edge Function secrets, not in GitHub frontend code:
+  SUPABASE_URL
+  SUPABASE_ANON_KEY
+  SUPABASE_SERVICE_ROLE_KEY
+  VAPID_PUBLIC_KEY
+  VAPID_PRIVATE_KEY
+  VAPID_SUBJECT
+  RESEND_API_KEY
+  RESEND_FROM
+- The VAPID public key used by the frontend is in VAPID_PUBLIC_KEY.txt. Generate/keep the matching private key securely and store it only in Supabase Secrets.
+
+SECURITY AND TESTING
+- Never commit SUPABASE_SERVICE_ROLE_KEY, VAPID_PRIVATE_KEY, email API keys, passwords, or student private data.
+- Test account deletion, password OTP, notifications, reward redemption, and point calculations using test accounts before live use.
+- This package has not been connected to the live GitHub repository or deployed to Supabase. Those actions require repository connection and deployment setup.
