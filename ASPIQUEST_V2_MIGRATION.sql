@@ -136,13 +136,13 @@ begin
    for response_item in select value from jsonb_array_elements(new.answers->'responses') loop
      if coalesce(response_item->>'type','')='text' then
        answer_text := trim(coalesce(response_item->>'answer',''));
-       words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\\s+')) end;
+       words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\s+')) end;
        if words > 150 then raise exception 'Setiap jawaban mandiri maksimal 150 kata.'; end if;
      end if;
    end loop;
  end if;
  answer_text := trim(coalesce(new.answers->>'critique',''));
- words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\\s+')) end;
+ words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\s+')) end;
  if words > 150 then raise exception 'Kritik & Saran maksimal 150 kata.'; end if;
  new.points_awarded := round(base_points * least(qualifying,3)::numeric / 3, 2);
  return new;
