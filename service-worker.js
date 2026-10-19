@@ -1,3 +1,6 @@
+const SW_VERSION = 'aspiquest-sw-20261018-debugfix1';
+self.addEventListener('install', event => { self.skipWaiting(); });
+self.addEventListener('activate', event => { event.waitUntil(self.clients.claim()); });
 self.addEventListener('push', event => {
   let payload = { title: 'Aspiquest', body: 'Ada pembaruan baru.', url: 'admin.html' };
   try { if (event.data) payload = { ...payload, ...event.data.json() }; } catch (_) {}

@@ -1,0 +1,21 @@
+ASPIQUEST — Redeem & Push Fix Notes
+
+Included client-side fixes:
+- Explicitly exposes requestRedeem and the controls used by inline buttons on window.
+- A redeem request now shows a busy state and treats the database RPC as the source of truth.
+- After the RPC succeeds, points are refreshed even if the separate push-notification request fails.
+- Push failure is reported separately, avoiding the false impression that redeem failed after points were deducted.
+- Control Room displays a push status message and the JavaScript cache version is bumped.
+- Removes old ':3' text from the Control Room helper copy.
+
+Manual requirements that code alone cannot complete:
+1. Deploy supabase/functions/push-redeem-notification/index.ts to Supabase.
+2. Configure VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT as Edge Function secrets. The public key in app.js must match VAPID_PUBLIC_KEY exactly. Never publish the private key.
+3. Each PK Inti account must log in to Control Room and click Settings > Aktifkan Notifikasi on each device/browser, and allow notifications.
+4. Run ASPIQUEST_V2_MIGRATION.sql only if its objects/functions are not already installed. Inspect ASPIQUEST_REDEEM_PUSH_FIX.sql for preflight checks; it inserts only the default settings row if missing.
+5. Redeem availability is controlled by redeem_settings (id=1). PK sets start/end dates and saves period, or uses open/close buttons. The SQL RPC validates the period and atomically deducts points/stock.
+6. For product descriptions and stock, PK opens Katalog & Stok Hadiah in Control Room. The current design intentionally locks reward names/prices.
+
+Validation status:
+- JavaScript syntax and ZIP integrity can be checked locally.
+- Live Supabase database, RLS, Edge Function deployment, actual browser permission, and push delivery cannot be verified from this package alone. Do not assume push is live until tested with a second PK device.
