@@ -1,0 +1,15 @@
+ASPIQUEST DEBUG FIX 2026-10-18
+
+WHAT CHANGED
+1. Catalog now falls back to a fixed visual catalog on BOTH student and Control Room pages if the rewards query fails. It clearly warns that stock/redeem controls still require database connectivity.
+2. Feedback send now validates the form and PK Inti role, catches and displays database errors instead of failing silently, and logs the technical error to browser Console.
+3. Push activation now has explicit try/catch diagnostics, checks current login, updates the service worker, and displays the actual failure message.
+4. Inline handlers are explicitly attached to window for compatibility.
+5. HTML references app.js with a version query string to avoid stale cached JS; service worker calls skipWaiting/clients.claim.
+
+IMPORTANT
+- This is a code-side patch, not proof that Supabase is configured. If catalog reports a database error, run ASPIQUEST_V2_MIGRATION.sql first in Supabase SQL Editor, then ASPIQUEST_FIXES_MIGRATION.sql. Review migration scripts and backup data before running.
+- If the migration is already applied, do not blindly re-run the whole migration if it includes seed inserts. Check table existence and the browser Console/Network response first.
+- Push requires HTTPS, browser notification permission, valid VAPID public key in app.js, matching VAPID private key configured as Supabase Edge Function secret, deployed push-redeem-notification function, and push_subscriptions table/policies. This patch cannot configure Supabase secrets or deploy Edge Functions by itself.
+- Feedback requires aspiration_feedback table and the policy "admins manage feedback" from the migration. If the insert returns an RLS or schema error, inspect the actual Console/toast message and compare the deployed database schema.
+- Upload these files manually, replacing same-name files. Hard-refresh (Ctrl+Shift+R) after deployment. Do not upload private VAPID keys or service-role keys to GitHub.

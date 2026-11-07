@@ -75,6 +75,21 @@ alter table public.redeem_settings enable row level security;
 alter table public.aspiration_feedback enable row level security;
 alter table public.push_subscriptions enable row level security;
 
+-- Helper used by the RLS policies below. The function checks the caller's own profile role.
+create or replace function public.is_pk_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role = 'pk_admin'
+  );
+$$;
+grant execute on function public.is_pk_admin() to authenticated;
+
 -- Drop only policies with these exact names, making this patch rerunnable.
 drop policy if exists "students read own point transactions" on public.point_transactions;
 drop policy if exists "admins read all point transactions" on public.point_transactions;
@@ -93,7 +108,7 @@ drop policy if exists "admins read push subscriptions" on public.push_subscripti
 create policy "students read own point transactions" on public.point_transactions for select to authenticated using(user_id=auth.uid());
 create policy "admins read all point transactions" on public.point_transactions for select to authenticated using(public.is_pk_admin());
 create policy "students read active rewards" on public.rewards for select to authenticated using(active=true or public.is_pk_admin());
-create policy "admins manage rewards" on public.rewards for all to authenticated using(public.is_pk_admin()) with check(public.is_pk_admin());
+create policy "admins manage rewards" on public.rewards for update to authenticated using(public.is_pk_admin()) with check(public.is_pk_admin());
 create policy "students read own redemptions" on public.redemptions for select to authenticated using(user_id=auth.uid() or public.is_pk_admin());
 create policy "admins manage redemptions" on public.redemptions for update to authenticated using(public.is_pk_admin()) with check(public.is_pk_admin());
 create policy "students read redeem settings" on public.redeem_settings for select to authenticated using(true);
@@ -136,13 +151,13 @@ begin
    for response_item in select value from jsonb_array_elements(new.answers->'responses') loop
      if coalesce(response_item->>'type','')='text' then
        answer_text := trim(coalesce(response_item->>'answer',''));
-       words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\\s+')) end;
+       words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\s+')) end;
        if words > 150 then raise exception 'Setiap jawaban mandiri maksimal 150 kata.'; end if;
      end if;
    end loop;
  end if;
  answer_text := trim(coalesce(new.answers->>'critique',''));
- words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\\s+')) end;
+ words := case when answer_text='' then 0 else cardinality(regexp_split_to_array(answer_text,'\s+')) end;
  if words > 150 then raise exception 'Kritik & Saran maksimal 150 kata.'; end if;
  new.points_awarded := round(base_points * least(qualifying,3)::numeric / 3, 2);
  return new;
@@ -232,6 +247,7 @@ begin
  select * into r from public.redemptions where id=p_redemption_id for update;
  if not found then raise exception 'Permintaan redeem tidak ditemukan.'; end if;
  if r.status='rejected' and p_status<>'rejected' then raise exception 'Redeem yang ditolak tidak dapat dibuka kembali; siswa harus mengajukan ulang.'; end if;
+ if r.status='completed' and p_status<>'completed' then raise exception 'Redeem yang sudah selesai tidak dapat diubah lagi.'; end if;
  if p_status='rejected' and r.status<>'rejected' then
    update public.profiles set points=coalesce(points,0)+r.points_spent where id=r.user_id;
    update public.rewards set stock=stock+1 where id=r.reward_id;

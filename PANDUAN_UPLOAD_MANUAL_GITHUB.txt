@@ -1,0 +1,60 @@
+ASPIQUEST 2.0 — PANDUAN UPLOAD MANUAL
+====================================
+
+PENTING: paket ini menyiapkan file revisi. Upload ke GitHub tidak menjalankan SQL database dan tidak otomatis men-deploy Supabase Edge Functions. Bagian UI bisa dipublikasikan dari GitHub Pages; fitur yang menyimpan data tetap bergantung pada project Supabase yang sudah dipakai website.
+
+A. UPLOAD WEBSITE KE GITHUB
+1. Download ZIP lalu ekstrak.
+2. Buka folder aspiquest_fix.
+3. Di repository GitHub, ganti file root berikut dengan versi dari paket:
+   - index.html
+   - student.html
+   - admin.html
+   - app.js
+   - service-worker.js
+4. Upload folder assets/ beserta seluruh isinya.
+5. Jangan menghapus file data/ atau server.js jika masih dipakai oleh deployment yang sekarang.
+6. Jangan unggah service-role key, VAPID private key, Resend API key, password, atau data siswa.
+7. Pastikan GitHub Pages mengarah ke branch/folder yang benar. Tunggu deployment selesai, lalu lakukan hard refresh.
+
+B. DATABASE — HARUS DILAKUKAN TERPISAH
+File SQL di paket bukan file frontend. Supaya kolom avatar/recovery email, tabel transaksi, redeem, feedback, dan OTP benar-benar ada, migrasi perlu dijalankan pada database Supabase yang digunakan website.
+1. Buat backup database terlebih dahulu.
+2. Periksa apakah ASPIQUEST_V2_MIGRATION.sql sudah pernah diterapkan. Jangan jalankan ulang jika ragu tanpa mengecek struktur dan trigger yang ada.
+3. Setelah V2 dipastikan sesuai, jalankan ASPIQUEST_FIXES_MIGRATION.sql.
+4. Jika hanya error `profiles.avatar_url does not exist` yang perlu ditangani, perubahan minimalnya adalah `ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;` — tetapi fitur profil lengkap juga memerlukan kolom recovery_email/recovery_email_verified dan tabel OTP dari migration fixes.
+5. Jangan menjalankan SQL pada database produksi tanpa backup dan persetujuan pengelola.
+
+C. EDGE FUNCTIONS DAN SECRET SERVER
+Folder `supabase/functions/` berisi:
+- admin-delete-student
+- profile-security
+- push-redeem-notification
+
+Fungsi tersebut harus di-deploy ke project Supabase yang benar. Secret server disimpan di konfigurasi Edge Function, tidak di app.js/GitHub frontend:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- VAPID_PUBLIC_KEY (harus cocok dengan public key di app.js)
+- VAPID_PRIVATE_KEY (RAHASIA; jangan pernah commit)
+- VAPID_SUBJECT
+- RESEND_API_KEY
+- RESEND_FROM
+
+Password OTP dan verifikasi email membutuhkan layanan pengiriman email Resend yang sudah dikonfigurasi. Push notification memerlukan VAPID key yang berpasangan, izin notifikasi dari tiap anggota PK Inti, HTTPS, dan Edge Function aktif.
+
+D. UJI SEBELUM DIPAKAI SISWA
+[ ] Login siswa dan PK Inti
+[ ] Tutorial muncul setiap kali masuk/refresh dan tombol Tutup/✕ berfungsi
+[ ] Jawaban <75 kata tidak mendapat bagian poin; 75–150 kata mendapat 1/3 poin per jawaban yang memenuhi syarat
+[ ] Poin OSIS/PK maksimum 5 per misi; Sekolah maksimum 10; desimal dua angka
+[ ] Riwayat poin dan redeem muncul
+[ ] Periode redeem tertutup berarti tombol redeem tidak bisa digunakan
+[ ] Redeem mengunci poin/stok sekali saja; penolakan mengembalikan poin dan stok
+[ ] Feedback privat hanya terlihat oleh siswa terkait dan PK Inti
+[ ] Foto profil, ganti username, OTP email, dan ganti password dites
+[ ] Hapus akun hanya menghapus akun siswa, bukan akun PK Inti
+[ ] Push notification diuji pada perangkat anggota PK Inti dengan browser tertutup
+
+STATUS KEJUJURAN
+File JavaScript diperiksa dengan `node --check`. Itu hanya pemeriksaan sintaks, bukan bukti bahwa koneksi database, email, push, atau semua alur live sudah berhasil. Fitur backend belum boleh dianggap aktif sebelum langkah B/C selesai dan checklist D dites.
